@@ -25,6 +25,7 @@
       wasQuadSent: false // was quad data was send in same iteration
     }
   };
+  console.log(makeCrypticUserID(32));
   getAds(loadAds);
 
   /**
@@ -65,11 +66,11 @@
   function loadAds() {
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
-    if (sessionStorage && sessionStorage.getItem("userID")) {
-      superState.userID = sessionStorage.getItem("userID");
+    if (getCookie("userID")) {
+      superState.userID = getCookie("userID");
     } else {
-      superState.userID = makeCrypticUserID(8);
-      sessionStorage.setItem("userID", superState.userID);
+      superState.userID = makeCrypticUserID(32);
+      setCookie("userID", superState.userID, 99);
     }
 
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
@@ -88,14 +89,15 @@
       noOfImagesLoaded++;
       sendImageLoadURL(
         superState.quadState.quadsList[i].id,
-        superState.quadState.quadsList[i].u_uid
+        superState.quadState.quadsList[i].u_uid,
+        true
       );
       if (noOfImagesLoaded === quadImages.length) {
         init(el);
       }
     }
 
-    function sendImageLoadURL(quadID, quadUID) {
+    function sendImageLoadURL(quadID, quadUID, success) {
       var url = "http://52.32.74.125/dashboard-htc/image-receiver.php";
       var method = "POST";
       var params = {
@@ -105,7 +107,8 @@
         userIP: superState.userIP,
         pathname: superState.pathname,
         quadID: quadID,
-        quadUID: quadUID
+        quadUID: quadUID,
+        renderSuccess: success
       };
       var paramsToSend = JSON.stringify(params);
       sendHttpRequest(url, method, paramsToSend, success, error);
@@ -129,10 +132,11 @@
     // initialize quadruple slider. change ad every timerCountdown seconds. Check for analytics on change.
     (function() {
       var quadruple = new Quadruple(el);
-      quadruple.on("change", adsChanged);
 
       autoplay(superState.quadState.quadTimer, nextFunction);
+      quadruple.on("change", adsChanged);
       function adsChanged(event) {
+        console.log(new Date());
         if (event.detail.currentItemIndex === 0) {
           superState.quadState.currentQuadsIteration++;
         }
@@ -277,9 +281,17 @@
    */
   function makeCrypticUserID(length) {
     var text = "";
+    var random = 14;
     var possibilities =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$";
-    for (var i = 0; i < length; i++) {
+    text += new Date().getTime();
+    var crytpicPID = superState.publisherID.toString();
+    var diff = 5 - crytpicPID;
+    if (diff > 0) {
+      crytpicPID = Array(diff + 1).join("0") + crytpicPID;
+    }
+    text += crytpicPID;
+    for (var i = 0; i < random; i++) {
       text += possibilities.charAt(
         Math.floor(Math.random() * possibilities.length)
       );
@@ -326,18 +338,21 @@
    * @param {function} code Code to run on interval
    */
   function autoplay(interval, callback) {
-    var lastTime = 0;
+    setInterval(function() {
+      callback();
+    }, interval);
+    // var lastTime = 0;
 
-    function frame(timestamp) {
-      var update = timestamp - lastTime >= interval;
-      if (update) {
-        callback();
-        lastTime = timestamp;
-      }
-      requestAnimationFrame(frame);
-    }
-
-    requestAnimationFrame(frame);
+    // function frame(timestamp) {
+    //   var update = timestamp - lastTime >= interval;
+    //   console.log(timestamp - lastTime);
+    //   if (update) {
+    //     callback();
+    //     lastTime = timestamp;
+    //   }
+    //   requestAnimationFrame(frame);
+    // }
+    // requestAnimationFrame(frame);
   }
 
   /**
@@ -380,5 +395,28 @@
       }
     };
     http.send(params);
+  }
+
+  function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+  }
+
+  function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(";");
+    for (var i = 0; i < ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == " ") {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
   }
 })();
