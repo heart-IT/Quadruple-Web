@@ -10,6 +10,7 @@
     spaceID: "ads_coming_here", //div id of the space
     startTime: null, //start time for ads
     userID: -1, //useriD of the session
+    userIP: null,
     userIdle: false, //application just loaded, user must not be idle
     pathname: null, // window location pathname
     quadState: {
@@ -39,31 +40,22 @@
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
-    function success(response) {
-      var adsList = [
-        {
-          id: 1,
-          url: "http://52.25.120.1/images/1ad.jpg"
-        },
-        {
-          id: 2,
-          url: "http://52.25.120.1/images/2ad.png"
-        },
-        {
-          id: 3,
-          url: "http://52.25.120.1/images/3ad.jpg"
-        },
-        {
-          id: 4,
-          url: "http://52.25.120.1/images/4asd.jpg"
-        }
-      ];
-      var adTimer = 5000;
-      var userInactivityTimer = 1000;
-      var adVisibilityPercent = 20;
+    function success(quadsDataStringified) {
+      var quadData = JSON.parse(quadsDataStringified);
+      var adsList = quadData["ad_data"];
+      var adTimer = quadData["ad_change_time"]
+        ? Number(quadData["ad_change_time"])
+        : 5000;
+      var userInactivityTimer = quadData["user_inactivity"]
+        ? Number(quadData["user_inactivity"])
+        : 1000;
+      var adVisibilityPercent = quadData["visibility"]
+        ? Number(quadData["visibility"])
+        : 20;
       superState.quadState.quadsList = adsList;
       superState.quadState.quadTimer = adTimer;
       superState.quadState.userInactivityTimer = userInactivityTimer;
+
       superState.quadState.quadVisibilityPercent = adVisibilityPercent;
       cb();
     }
@@ -73,30 +65,24 @@
   function init() {
     superState.startTime = new Date();
     superState.pathname = window.location.pathname;
-    superState.userID = makeCrypticUserID(8);
+    superState.userIP = myip;
+    if (sessionStorage && sessionStorage.getItem("userID")) {
+      superState.userID = sessionStorage.getItem("userID");
+    } else {
+      superState.userID = makeCrypticUserID(8);
+      sessionStorage.setItem("userID");
+    }
 
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
     var el = document.getElementById(superState.spaceID);
     el.setAttribute("class", "Quadruple");
     el.appendChild(sliderHTML(superState.quadState.quadsList));
-    var btn = document.createElement("button");
-    btn.setAttribute("class", "Quadruple-buttonPrevious");
-    btn.innerHTML = "Previous";
-    el.appendChild(btn);
-    var btn2 = document.createElement("button");
-    btn2.setAttribute("class", "Quadruple-buttonNext");
-    btn2.innerHTML = "Next";
-    el.appendChild(btn2);
+
     // initialize quadruple slider. change ad every timerCountdown seconds. Check for analytics on change.
     (function() {
       var quadruple = new Quadruple(el);
-      autoplay(superState.quadState.quadTimer, nextFunction);
       quadruple.on("change", adsChanged);
-
-      function nextFunction() {
-        quadruple.next();
-      }
-
+      autoplay(superState.quadState.quadTimer, nextFunction);
       function adsChanged(event) {
         if (event.detail.currentItemIndex === 0) {
           superState.quadState.currentQuadsIteration++;
@@ -105,6 +91,9 @@
         superState.quadState.currentVisibleQuadIndex =
           event.detail.currentItemIndex;
         sendActivity();
+      }
+      function nextFunction() {
+        quadruple.next();
       }
     })();
 
@@ -164,6 +153,7 @@
           pathname: superState.pathname,
           timeInSeconds: new Date() - superState.startTime,
           userID: superState.userID,
+          userIP: superState.userIP,
           quadID:
             superState.quadState.quadsList[
               superState.quadState.currentVisibleQuadIndex
@@ -299,7 +289,7 @@
     http.setRequestHeader("Content-type", "application/json;charset=UTF-8");
     http.onreadystatechange = function() {
       if (http.readyState == 4 && http.status == 200) {
-        success();
+        success(http.responseText);
       } else {
         error();
       }
