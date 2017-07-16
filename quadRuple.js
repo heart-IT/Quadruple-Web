@@ -4,30 +4,26 @@
 
 (function() {
   "use strict";
-  var idle;
-
-  var quadruple;
-
   // private variables
-
   var superState = {
     publisherID: 1, //id of the publisher
     spaceID: "ads_coming_here", //div id of the space
     startTime: null, //start time for ads
     userID: -1, //useriD of the session
-    userIdle: false //application just loaded, user must not be idle
+    userIdle: false, //application just loaded, user must not be idle
+    pathname: null, // window location pathname
+    quadState: {
+      quadsList: [],
+      quadTimer: 0,
+      userInactivityTimer: 0,
+      quadVisibilityPercent: 20,
+      sentQuadIDs: [], //list of quads sent that is were unique
+      isQuadVisible: null, //ads didnt loaded yet
+      currentVisibleQuadIndex: -1, // quad position
+      currentQuadsIteration: 0, // current iteration of all quads
+      wasQuadSent: false // was quad data was send in same iteration
+    }
   };
-  var quadState = {
-    quadsList: [],
-    quadTimer: 0,
-    userInactivityTimer: 0,
-    quadVisibilityPercent: 20,
-    sentQuadIDs: [], //list of quads sent that is were unique
-    isQuadVisible: null, //ads didnt loaded yet
-    currentVisibleQuadIndex: -1, // quad position
-    currentQuadsIteration: 0 // current iteration of all quads
-  };
-
   getAds(init);
 
   /**
@@ -65,29 +61,36 @@
       var adTimer = 5000;
       var userInactivityTimer = 1000;
       var adVisibilityPercent = 20;
-      quadState.adsList = response.adsList ? response.adsList : adsList;
-      quadState.adTimer = adTimer;
-      quadState.userInactivityTimer = userInactivityTimer;
-      quadState.adVisibilityPercent = adVisibilityPercent;
+      superState.quadState.quadsList = adsList;
+      superState.quadState.quadTimer = adTimer;
+      superState.quadState.userInactivityTimer = userInactivityTimer;
+      superState.quadState.quadVisibilityPercent = adVisibilityPercent;
       cb();
     }
     function error() {}
   }
 
   function init() {
-    superState.userID = makeCrypticUserID();
+    superState.startTime = new Date();
+    superState.pathname = window.location.pathname;
+    superState.userID = makeCrypticUserID(8);
 
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
     var el = document.getElementById(superState.spaceID);
     el.setAttribute("class", "Quadruple");
-    el.appendChild(sliderHTML(adsList));
-
-    superState.startTime = new Date();
-
+    el.appendChild(sliderHTML(superState.quadState.quadsList));
+    var btn = document.createElement("button");
+    btn.setAttribute("class", "Quadruple-buttonPrevious");
+    btn.innerHTML = "Previous";
+    el.appendChild(btn);
+    var btn2 = document.createElement("button");
+    btn2.setAttribute("class", "Quadruple-buttonNext");
+    btn2.innerHTML = "Next";
+    el.appendChild(btn2);
     // initialize quadruple slider. change ad every timerCountdown seconds. Check for analytics on change.
     (function() {
-      quadruple = new Quadruple(el);
-      autoplay(quadState.quadTimer, nextFunction);
+      var quadruple = new Quadruple(el);
+      autoplay(superState.quadState.quadTimer, nextFunction);
       quadruple.on("change", adsChanged);
 
       function nextFunction() {
@@ -96,10 +99,12 @@
 
       function adsChanged(event) {
         if (event.detail.currentItemIndex === 0) {
-          quadState.currentQuadsIteration++;
+          superState.quadState.currentQuadsIteration++;
         }
-        quadState.currentVisibleQuadIndex = event.detail.currentItemIndex;
-        sendData();
+        superState.quadState.wasQuadSent = false;
+        superState.quadState.currentVisibleQuadIndex =
+          event.detail.currentItemIndex;
+        sendActivity();
       }
     })();
 
@@ -110,14 +115,14 @@
       };
       var awayBackCallback = function() {
         superState.userIdle = false;
-        sendData();
+        sendActivity();
       };
       var hiddenCallback = function() {
         superState.userIdle = true;
       };
       var visibleCallback = function() {
         superState.userIdle = false;
-        sendData();
+        sendActivity();
       };
 
       var idle = new Idle({
@@ -125,45 +130,86 @@
         onVisible: visibleCallback,
         onAway: awayCallback,
         onAwayBack: awayBackCallback,
-        awayTimeout: quadState.userInactivityTimer //away with default value of the textbox
+        awayTimeout: superState.quadState.userInactivityTimer //away with default value of the textbox
       });
     })();
 
     // check for user scroll event.
+    superState.quadState.isQuadVisible =
+      elementVisibility(superState.spaceID) >
+      superState.quadState.quadVisibilityPercent
+        ? true
+        : false;
     window.addEventListener("scroll", function(e) {
-      if (quadState) {
-        quadState.isQuadVisible =
-          adVisiblity() > quadVisibilityPercent ? true : false;
+      if (superState.quadState) {
+        superState.quadState.isQuadVisible =
+          elementVisibility(superState.spaceID) >
+          superState.quadState.quadVisibilityPercent
+            ? true
+            : false;
       }
     });
-    quadState.isQuadVisible =
-      adVisiblity() > quadVisibilityPercent ? true : false;
-    function adVisiblity() {
-      var windowDim = [
-        window.pageYOffset,
-        window.innerHeight + window.pageYOffset
-      ];
-      var el = document.getElementById(superState.spaceID);
-      var elDim = [el.offsetTop, el.offsetTop + el.clientHeight];
-      var visibleRange = [
-        Math.max(windowDim[0], elDim[0]),
-        Math.min(windowDim[1], elDim[1])
-      ];
-      var percent =
-        (visibleRange[1] - visibleRange[0]) / (elDim[1] - elDim[0]) * 100;
-      return percent;
+
+    function sendActivity() {
+      if (
+        superState.quadState.isQuadVisible &&
+        !superState.userIdle &&
+        !superState.quadState.wasQuadSent
+      ) {
+        var url = "http://52.32.74.125/dashboard-htc/data-receiver.php";
+        var method = "POST";
+        var params = {
+          publisherID: superState.publisherID,
+          spaceID: superState.spaceID,
+          pathname: superState.pathname,
+          timeInSeconds: new Date() - superState.startTime,
+          userID: superState.userID,
+          quadID:
+            superState.quadState.quadsList[
+              superState.quadState.currentVisibleQuadIndex
+            ].id,
+          quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
+          quadIteration: superState.quadState.currentQuadsIteration,
+          isUnique:
+            superState.quadState.sentQuadIDs.indexOf(
+              superState.quadState.quadsList[
+                superState.quadState.currentVisibleQuadIndex
+              ].id
+            ) === -1
+              ? true
+              : false
+        };
+        var paramsToSend = JSON.stringify(params);
+        sendHttpRequest(url, method, paramsToSend, success, error);
+        function success() {
+          superState.quadState.wasQuadSent = true;
+          if (
+            superState.quadState.sentQuadIDs.indexOf(
+              superState.quadState.quadsList[
+                superState.quadState.currentVisibleQuadIndex
+              ].id
+            ) === -1
+          ) {
+            superState.quadState.sentQuadIDs.push(
+              superState.quadState.quadsList[
+                superState.quadState.currentVisibleQuadIndex
+              ].id
+            );
+          }
+        }
+        function error() {}
+      }
     }
   }
-
   /**
    * Function to make cryptic user_id
+   * @param {Number} length Length of string
    */
-  function makeCrypticUserID() {
+  function makeCrypticUserID(length) {
     var text = "";
     var possibilities =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$";
-    var idLength = 8;
-    for (var i = 0; i < idLength; i++) {
+    for (var i = 0; i < length; i++) {
       text += possibilities.charAt(
         Math.floor(Math.random() * possibilities.length)
       );
@@ -219,36 +265,24 @@
     requestAnimationFrame(frame);
   }
 
-  function sendData() {
-    if (
-      superState.isAdVisible &&
-      !superState.userIdle &&
-      !superState.wasAdSent
-    ) {
-      var url = "http://52.32.74.125/dashboard-htc/data-receiver.php";
-      var method = "POST";
-      var params = Object.assign({}, superState, {
-        timeInSeconds: new Date() - superState.startTime,
-        currentIndex: -1,
-        isUnique: superState.adsShown.indexOf(superState.adID) === -1 ? 1 : 0
-      });
-      // remove state configuration.. not wise to send extra data
-      delete params.isAdVisible;
-      delete params.userIdle;
-      delete params.wasAdSent;
-      delete params.startTime;
-      delete params.adsShown;
-      var paramsToSend = JSON.stringify(params);
-      sendHttpRequest(url, method, paramsToSend, success, error);
-
-      function success() {
-        superState.wasAdSent = true;
-        if (superState.adsShown.indexOf(superState.adID) === -1) {
-          superState.adsShown.push(superState.adID);
-        }
-      }
-      function error() {}
-    }
+  /**
+   * This function checks how much part of element is visible and return in %
+   * @param {DOM} el Element of which visibility percent is to be check
+   */
+  function elementVisibility(el) {
+    var windowDim = [
+      window.pageYOffset,
+      window.innerHeight + window.pageYOffset
+    ];
+    var el = document.getElementById(el);
+    var elDim = [el.offsetTop, el.offsetTop + el.clientHeight];
+    var visibleRange = [
+      Math.max(windowDim[0], elDim[0]),
+      Math.min(windowDim[1], elDim[1])
+    ];
+    var percent =
+      (visibleRange[1] - visibleRange[0]) / (elDim[1] - elDim[0]) * 100;
+    return percent;
   }
 
   /**

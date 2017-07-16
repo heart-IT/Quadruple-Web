@@ -64,3 +64,48 @@
   visibility: visible;
   position: relative;
 }
+
+.Quadruple:hover .Quadruple-buttonNext,
+.Quadruple:hover .Quadruple-buttonPrevious {
+  display: block !important;
+}
+
+.Quadruple-buttonNext,
+.Quadruple-buttonPrevious {
+  display: none;
+  border: none;
+  webkit-appearance: none;
+  background: hsla(0, 0%, 100%, .6);
+  width: 30px;
+  height: 30px;
+  border-radius: 20px;
+  text-indent: -9999px;
+  position: absolute;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+.Quadruple-buttonPrevious {
+  left: .4pc;
+}
+.Quadruple-buttonNext {
+  right: .4pc;
+}
+.Quadruple-buttonNext:before,
+.Quadruple-buttonPrevious:before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  text-indent: 0;
+  font-size: 18px;
+  line-height: 0;
+}
+.Quadruple-buttonNext:before {
+  content: "\276F";
+}
+.Quadruple-buttonPrevious:before {
+  content: "\276E";
+}
