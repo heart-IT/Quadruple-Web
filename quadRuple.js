@@ -25,7 +25,7 @@
       wasQuadSent: false // was quad data was send in same iteration
     }
   };
-  getAds(init);
+  getAds(loadAds);
 
   /**
    * Function which gets Ads.
@@ -62,8 +62,7 @@
     function error() {}
   }
 
-  function init() {
-    superState.startTime = new Date();
+  function loadAds() {
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
     if (sessionStorage && sessionStorage.getItem("userID")) {
@@ -78,6 +77,46 @@
     el.setAttribute("class", "Quadruple");
     el.appendChild(sliderHTML(superState.quadState.quadsList));
 
+    var quadImages = document.getElementsByClassName("Quadruple-image");
+    var noOfImagesLoaded = 0;
+    for (var i = 0; i < quadImages.length; i++) {
+      (function(i) {
+        quadImages[i].onload = loadHandler(i);
+      })(i);
+    }
+    function loadHandler(i) {
+      noOfImagesLoaded++;
+      sendImageLoadURL(
+        superState.quadState.quadsList[i].id,
+        superState.quadState.quadsList[i].u_uid
+      );
+      if (noOfImagesLoaded === quadImages.length) {
+        init(el);
+      }
+    }
+
+    function sendImageLoadURL(quadID, quadUID) {
+      var url = "http://52.32.74.125/dashboard-htc/image-receiver.php";
+      var method = "POST";
+      var params = {
+        publisherID: superState.publisherID,
+        spaceID: superState.spaceID,
+        userID: superState.userID,
+        userIP: superState.userIP,
+        pathname: superState.pathname,
+        quadID: quadID,
+        quadUID: quadUID
+      };
+      var paramsToSend = JSON.stringify(params);
+      sendHttpRequest(url, method, paramsToSend, success, error);
+      function success() {}
+      function error() {}
+    }
+  }
+
+  function init(el) {
+    superState.startTime = new Date();
+
     // bind click event
     (function() {
       var hrefs = document.getElementsByClassName("Quadruple-link");
@@ -87,11 +126,11 @@
         });
       }
     })();
-
     // initialize quadruple slider. change ad every timerCountdown seconds. Check for analytics on change.
     (function() {
       var quadruple = new Quadruple(el);
       quadruple.on("change", adsChanged);
+
       autoplay(superState.quadState.quadTimer, nextFunction);
       function adsChanged(event) {
         if (event.detail.currentItemIndex === 0) {
@@ -168,6 +207,10 @@
             superState.quadState.quadsList[
               superState.quadState.currentVisibleQuadIndex
             ].id,
+          quadUID:
+            superState.quadState.quadsList[
+              superState.quadState.currentVisibleQuadIndex
+            ].u_uid,
           quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
           quadIteration: superState.quadState.currentQuadsIteration,
           isUnique:
@@ -215,6 +258,10 @@
           superState.quadState.quadsList[
             superState.quadState.currentVisibleQuadIndex
           ].id,
+        quadUID:
+          superState.quadState.quadsList[
+            superState.quadState.currentVisibleQuadIndex
+          ].u_uid,
         quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
         quadIteration: superState.quadState.currentQuadsIteration
       };
@@ -265,6 +312,7 @@
     }
     function makeImg(src, alt, title) {
       var img = document.createElement("img");
+      img.setAttribute("class", "Quadruple-image");
       img.src = src;
       if (alt) img.alt = alt;
       if (title) img.title = title;
@@ -282,12 +330,10 @@
 
     function frame(timestamp) {
       var update = timestamp - lastTime >= interval;
-
       if (update) {
         callback();
         lastTime = timestamp;
       }
-
       requestAnimationFrame(frame);
     }
 
