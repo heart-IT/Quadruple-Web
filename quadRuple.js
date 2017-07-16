@@ -70,13 +70,23 @@
       superState.userID = sessionStorage.getItem("userID");
     } else {
       superState.userID = makeCrypticUserID(8);
-      sessionStorage.setItem("userID");
+      sessionStorage.setItem("userID", superState.userID);
     }
 
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
     var el = document.getElementById(superState.spaceID);
     el.setAttribute("class", "Quadruple");
     el.appendChild(sliderHTML(superState.quadState.quadsList));
+
+    // bind click event
+    (function() {
+      var hrefs = document.getElementsByClassName("Quadruple-link");
+      for (var i = 0; i < hrefs.length; i++) {
+        hrefs[i].addEventListener("click", function(e) {
+          sendClick(e);
+        });
+      }
+    })();
 
     // initialize quadruple slider. change ad every timerCountdown seconds. Check for analytics on change.
     (function() {
@@ -190,6 +200,29 @@
         function error() {}
       }
     }
+
+    function sendClick(ev) {
+      var url = "http://52.32.74.125/dashboard-htc/click-receiver.php";
+      var method = "POST";
+      var params = {
+        publisherID: superState.publisherID,
+        spaceID: superState.spaceID,
+        pathname: superState.pathname,
+        timeInSeconds: new Date() - superState.startTime,
+        userID: superState.userID,
+        userIP: superState.userIP,
+        quadID:
+          superState.quadState.quadsList[
+            superState.quadState.currentVisibleQuadIndex
+          ].id,
+        quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
+        quadIteration: superState.quadState.currentQuadsIteration
+      };
+      var paramsToSend = JSON.stringify(params);
+      sendHttpRequest(url, method, paramsToSend, success, error);
+      function success() {}
+      function error() {}
+    }
   }
   /**
    * Function to make cryptic user_id
@@ -219,7 +252,13 @@
       for (var i = 0; i < array.length; i++) {
         var item = document.createElement("div");
         item.setAttribute("class", "Quadruple-item");
-        item.appendChild(makeImg(array[i].url));
+        var link = document.createElement("a");
+        link.title = "Quad unit";
+        link.href = array[i].url;
+        link.target = "_blank";
+        link.setAttribute("class", "Quadruple-link");
+        link.appendChild(makeImg(array[i].url));
+        item.appendChild(link);
         list.appendChild(item);
       }
       return list;
