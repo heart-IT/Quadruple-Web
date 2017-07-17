@@ -25,7 +25,6 @@
       wasQuadSent: false // was quad data was send in same iteration
     }
   };
-  console.log(makeCrypticUserID(32));
   getAds(loadAds);
 
   /**
@@ -33,11 +32,18 @@
    * @param {Function} cb callback function
    */
   function getAds(cb) {
+    if (getCookie("userID")) {
+      superState.userID = getCookie("userID");
+    } else {
+      superState.userID = makeCrypticUserID(32);
+      setCookie("userID", superState.userID, 99999);
+    }
     var url = "http://52.32.74.125/dashboard-htc/adinfo.php";
     var method = "POST";
     var params = {
       publisherID: superState.publisherID,
-      spaceID: superState.spaceID
+      spaceID: superState.spaceID,
+      userID: superState.userID
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -66,12 +72,6 @@
   function loadAds() {
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
-    if (getCookie("userID")) {
-      superState.userID = getCookie("userID");
-    } else {
-      superState.userID = makeCrypticUserID(32);
-      setCookie("userID", superState.userID, 99);
-    }
 
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
     var el = document.getElementById(superState.spaceID);
@@ -83,6 +83,7 @@
     for (var i = 0; i < quadImages.length; i++) {
       (function(i) {
         quadImages[i].onload = loadHandler(i);
+        quadImages[i].onerror = errorHandler(i);
       })(i);
     }
     function loadHandler(i) {
@@ -91,6 +92,18 @@
         superState.quadState.quadsList[i].id,
         superState.quadState.quadsList[i].u_uid,
         true
+      );
+      if (noOfImagesLoaded === quadImages.length) {
+        init(el);
+      }
+    }
+
+    function errorHandler(i) {
+      noOfImagesLoaded++;
+      sendImageLoadURL(
+        superState.quadState.quadsList[i].id,
+        superState.quadState.quadsList[i].u_uid,
+        false
       );
       if (noOfImagesLoaded === quadImages.length) {
         init(el);
