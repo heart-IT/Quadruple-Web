@@ -64,6 +64,7 @@
       superState.quadState.userInactivityTimer = userInactivityTimer;
 
       superState.quadState.quadVisibilityPercent = adVisibilityPercent;
+      // superState.quadState.quadVisibilityPercent = 0;
       cb();
     }
     function error() {}
@@ -190,18 +191,26 @@
     })();
 
     // check for user scroll event.
-    superState.quadState.isQuadVisible =
-      elementVisibility(superState.spaceID) >
-      superState.quadState.quadVisibilityPercent
-        ? true
-        : false;
+    if (superState.quadState.quadVisibilityPercent) {
+      superState.quadState.isQuadVisible =
+        elementVisibility(superState.spaceID) >
+        superState.quadState.quadVisibilityPercent
+          ? true
+          : false;
+    } else {
+      superState.quadState.isQuadVisible = true;
+    }
     window.addEventListener("scroll", function(e) {
-      if (superState.quadState) {
-        superState.quadState.isQuadVisible =
-          elementVisibility(superState.spaceID) >
-          superState.quadState.quadVisibilityPercent
-            ? true
-            : false;
+      if (superState.quadState.quadVisibilityPercent) {
+        if (superState.quadState) {
+          superState.quadState.isQuadVisible =
+            elementVisibility(superState.spaceID) >
+            superState.quadState.quadVisibilityPercent
+              ? true
+              : false;
+        } else {
+          superState.quadState.isQuadVisible = true;
+        }
       }
     });
 
