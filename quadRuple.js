@@ -260,6 +260,7 @@
               : false
         };
         var paramsToSend = JSON.stringify(params);
+        console.log(params);
         sendHttpRequest(url, method, paramsToSend, success, error);
         function success() {
           superState.quadState.wasQuadSent = true;
