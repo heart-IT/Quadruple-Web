@@ -39,13 +39,23 @@
       superState.userID = makeCrypticUserID(32);
       setCookie("userID", superState.userID, 99999);
     }
-    var url = "https://52.32.74.125/dashboard-htc/adinfo.php";
+    if (getCookie("pageCounter")) {
+      setCookie("pageCounter", getCookie("pageCounter") + 1);
+      superState.pageCounter = getCookie("pageCounter");
+    } else {
+      setCookie("pageCounter", 1);
+      superState.pageCounter = 1;
+    }
+    superState.pathname = window.location.pathname;
+    superState.userIP = myip;
+    var url = "https://www.quadrupletech.com/dashboard-htc/adinfo.php";
     var method = "POST";
     var params = {
       publisherID: superState.publisherID,
       spaceID: superState.spaceID,
       userID: superState.userID,
-      pathname: superState.pathname
+      pathname: superState.pathname,
+      pageCounter: superState.pageCounter
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -73,9 +83,6 @@
   }
 
   function loadAds() {
-    superState.pathname = window.location.pathname;
-    superState.userIP = myip;
-
     // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
     var el = document.getElementById(superState.spaceID);
     el.setAttribute("class", "Quadruple");
@@ -114,7 +121,8 @@
     }
 
     function sendImageLoadURL(quadID, quadUID, success) {
-      var url = "https://52.32.74.125/dashboard-htc/image-receiver.php";
+      var url =
+        "https://www.quadrupletech.com/dashboard-htc/image-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
@@ -135,13 +143,6 @@
 
   function init(el) {
     superState.startTime = new Date();
-    if (getCookie("pageCounter")) {
-      setCookie("pageCounter", getCookie("pageCounter") + 1);
-      superState.pageCounter = getCookie("pageCounter");
-    } else {
-      setCookie("pageCounter", 1);
-      superState.pageCounter = 1;
-    }
     // bind click event
     (function() {
       var hrefs = document.getElementsByClassName("Quadruple-link");
@@ -228,7 +229,8 @@
         !superState.userIdle &&
         !superState.quadState.wasQuadSent
       ) {
-        var url = "https://52.32.74.125/dashboard-htc/data-receiver.php";
+        var url =
+          "https://www.quadrupletech.com/dashboard-htc/data-receiver.php";
         var method = "POST";
         var params = {
           publisherID: superState.publisherID,
@@ -280,7 +282,8 @@
     }
 
     function sendClick(ev) {
-      var url = "https://52.32.74.125/dashboard-htc/click-receiver.php";
+      var url =
+        "https://www.quadrupletech.com/dashboard-htc/click-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
