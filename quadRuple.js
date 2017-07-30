@@ -13,6 +13,7 @@
     userIP: null,
     userIdle: false, //application just loaded, user must not be idle
     pathname: null, // window location pathname
+    isRequestInProcess: false,
     quadState: {
       quadsList: [],
       quadTimer: 0,
@@ -38,12 +39,13 @@
       superState.userID = makeCrypticUserID(32);
       setCookie("userID", superState.userID, 99999);
     }
-    var url = "http://52.32.74.125/dashboard-htc/adinfo.php";
+    var url = "https://52.32.74.125/dashboard-htc/adinfo.php";
     var method = "POST";
     var params = {
       publisherID: superState.publisherID,
       spaceID: superState.spaceID,
-      userID: superState.userID
+      userID: superState.userID,
+      pathname: superState.pathname
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -112,7 +114,7 @@
     }
 
     function sendImageLoadURL(quadID, quadUID, success) {
-      var url = "http://52.32.74.125/dashboard-htc/image-receiver.php";
+      var url = "https://52.32.74.125/dashboard-htc/image-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
@@ -133,7 +135,13 @@
 
   function init(el) {
     superState.startTime = new Date();
-
+    if (getCookie("pageCounter")) {
+      setCookie("pageCounter", getCookie("pageCounter") + 1);
+      superState.pageCounter = getCookie("pageCounter");
+    } else {
+      setCookie("pageCounter", 1);
+      superState.pageCounter = 1;
+    }
     // bind click event
     (function() {
       var hrefs = document.getElementsByClassName("Quadruple-link");
@@ -150,7 +158,7 @@
       autoplay(superState.quadState.quadTimer, nextFunction);
       quadruple.on("change", adsChanged);
       function adsChanged(event) {
-        console.log(new Date());
+        superState.isRequestInProcess = false; //request in process reset
         if (event.detail.currentItemIndex === 0) {
           superState.quadState.currentQuadsIteration++;
         }
@@ -220,12 +228,13 @@
         !superState.userIdle &&
         !superState.quadState.wasQuadSent
       ) {
-        var url = "http://52.32.74.125/dashboard-htc/data-receiver.php";
+        var url = "https://52.32.74.125/dashboard-htc/data-receiver.php";
         var method = "POST";
         var params = {
           publisherID: superState.publisherID,
           spaceID: superState.spaceID,
           pathname: superState.pathname,
+          pageCounter: superState.pageCounter,
           timeInSeconds: new Date() - superState.startTime,
           userID: superState.userID,
           userIP: superState.userIP,
@@ -271,12 +280,13 @@
     }
 
     function sendClick(ev) {
-      var url = "http://52.32.74.125/dashboard-htc/click-receiver.php";
+      var url = "https://52.32.74.125/dashboard-htc/click-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
         spaceID: superState.spaceID,
         pathname: superState.pathname,
+        pageCounter: superState.pageCounter,
         timeInSeconds: new Date() - superState.startTime,
         userID: superState.userID,
         userIP: superState.userIP,
@@ -363,18 +373,6 @@
     setInterval(function() {
       callback();
     }, interval);
-    // var lastTime = 0;
-
-    // function frame(timestamp) {
-    //   var update = timestamp - lastTime >= interval;
-    //   console.log(timestamp - lastTime);
-    //   if (update) {
-    //     callback();
-    //     lastTime = timestamp;
-    //   }
-    //   requestAnimationFrame(frame);
-    // }
-    // requestAnimationFrame(frame);
   }
 
   /**
@@ -406,6 +404,10 @@
    * @param {function} error function to call on error
    */
   function sendHttpRequest(url, method, params, success, error) {
+    if (superState.isRequestInProcess) {
+      return;
+    }
+    superState.isRequestInProcess = true;
     var http = new XMLHttpRequest();
     http.open(method, url, true);
     http.setRequestHeader("Content-type", "application/json;charset=UTF-8");
@@ -415,6 +417,7 @@
       } else {
         error();
       }
+      superState.isRequestInProcess = false;
     };
     http.send(params);
   }
