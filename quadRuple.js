@@ -40,7 +40,7 @@
       setCookie("userID", superState.userID, 99999);
     }
     if (getCookie("pageCounter")) {
-      setCookie("pageCounter", getCookie("pageCounter") + 1);
+      setCookie("pageCounter", parseInt(getCookie("pageCounter")) + 1);
       superState.pageCounter = getCookie("pageCounter");
     } else {
       setCookie("pageCounter", 1);
