@@ -7,7 +7,7 @@
   // private variables
   var superState = {
     publisherID: 1, //id of the publisher
-    spaceID: "ads_coming_here", //div id of the space
+    spaceID: "quad_units", //div id of the space
     startTime: null, //start time for ads
     userID: -1, //useriD of the session
     userIP: null,
@@ -48,14 +48,15 @@
     }
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
-    var url = "https://www.quadrupletech.com/dashboard-htc/adinfo.php";
+    var url = "https://www.quadrupletech.com/receiver/adinfo.php";
     var method = "POST";
     var params = {
       publisherID: superState.publisherID,
       spaceID: superState.spaceID,
       userID: superState.userID,
       pathname: superState.pathname,
-      pageCounter: superState.pageCounter
+      pageCounter: superState.pageCounter,
+      userIP: superState.userIP
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -121,8 +122,7 @@
     }
 
     function sendImageLoadURL(quadID, quadUID, success) {
-      var url =
-        "https://www.quadrupletech.com/dashboard-htc/image-receiver.php";
+      var url = "https://www.quadrupletech.com/receiver/image-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
@@ -229,8 +229,7 @@
         !superState.userIdle &&
         !superState.quadState.wasQuadSent
       ) {
-        var url =
-          "https://www.quadrupletech.com/dashboard-htc/data-receiver.php";
+        var url = "https://www.quadrupletech.com/receiver/data-receiver.php";
         var method = "POST";
         var params = {
           publisherID: superState.publisherID,
@@ -283,8 +282,7 @@
     }
 
     function sendClick(ev) {
-      var url =
-        "https://www.quadrupletech.com/dashboard-htc/click-receiver.php";
+      var url = "https://www.quadrupletech.com/receiver/click-receiver.php";
       var method = "POST";
       var params = {
         publisherID: superState.publisherID,
