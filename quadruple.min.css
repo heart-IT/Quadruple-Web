@@ -1,0 +1,18 @@
+.Quadruple,
+.Quadruple-list {
+  position: relative;
+}
+.Quadruple-list {
+  overflow: hidden;
+}
+.Quadruple-item {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+.Quadruple-item--current {
+  visibility: visible;
+  position: relative;
+}
