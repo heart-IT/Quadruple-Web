@@ -260,7 +260,7 @@
         };
         var paramsToSend = JSON.stringify(params);
         console.log(params);
-        sendHttpRequest(url, method, paramsToSend, success, error);
+        sendHttpRequest(url, method, paramsToSend, success, error, "data");
         function success() {
           superState.quadState.wasQuadSent = true;
           if (
@@ -404,12 +404,15 @@
    * @param {string} params Params to send with Request
    * @param {function} success function to call on success
    * @param {function} error function to call on error
+   * @param {string} type type of http request
    */
-  function sendHttpRequest(url, method, params, success, error) {
-    if (superState.isRequestInProcess) {
-      return;
+  function sendHttpRequest(url, method, params, success, error, type) {
+    if (type === "data") {
+      if (superState.isRequestInProcess) {
+        return;
+      }
+      superState.isRequestInProcess = true;
     }
-    superState.isRequestInProcess = true;
     var http = new XMLHttpRequest();
     http.open(method, url, true);
     http.setRequestHeader("Content-type", "application/json;charset=UTF-8");
@@ -419,7 +422,9 @@
       } else {
         error();
       }
-      superState.isRequestInProcess = false;
+      if (type === "data") {
+        superState.isRequestInProcess = false;
+      }
     };
     http.send(params);
   }
