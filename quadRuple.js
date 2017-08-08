@@ -1,4 +1,5 @@
 /**
+ * Chill of the day:
  * Preferring simplicity and freedom, Practicing not-doing, Everything will fall into place - Lao Tzu
  */
 
@@ -14,6 +15,7 @@
     userIdle: false, //application just loaded, user must not be idle
     pathname: null, // window location pathname
     isRequestInProcess: false,
+    isMobileDevice: null,
     quadState: {
       quadsList: [],
       quadTimer: 0,
@@ -26,13 +28,26 @@
       wasQuadSent: false // was quad data was send in same iteration
     }
   };
-  getAds(loadAds);
+  isElementPresent(superState.spaceID, getAds);
+
+  /**
+   * This function checks if the element exists in the dom and is visible also 
+   * @param {string} elementName domID of the element
+   * @param {function} success success event
+   */
+  function isElementPresent(elementName, success) {
+    var el = document.getElementById(elementName);
+    // if element exists
+    if (!!el && !!el.offsetParent) {
+      getAds(el);
+    }
+  }
 
   /**
    * Function which gets Ads.
    * @param {Function} cb callback function
    */
-  function getAds(cb) {
+  function getAds(el, cb) {
     if (getCookie("userID")) {
       superState.userID = getCookie("userID");
     } else {
@@ -48,6 +63,9 @@
     }
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
+    superState.isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+      navigator.userAgent.toLowerCase()
+    );
     var url = "https://www.quadrupletech.com/receiver/adinfo.php";
     var method = "POST";
     var params = {
@@ -56,7 +74,8 @@
       userID: superState.userID,
       pathname: superState.pathname,
       pageCounter: superState.pageCounter,
-      userIP: superState.userIP
+      userIP: superState.userIP,
+      isMobileDevice: superState.isMobileDevice
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -78,14 +97,12 @@
 
       superState.quadState.quadVisibilityPercent = adVisibilityPercent;
       // superState.quadState.quadVisibilityPercent = 0;
-      cb();
+      loadAds(el);
     }
     function error() {}
   }
 
-  function loadAds() {
-    // element where quadruple ads will come. add Quadruple class to it for css. Create html for ads and add it to the div
-    var el = document.getElementById(superState.spaceID);
+  function loadAds(el) {
     el.setAttribute("class", "Quadruple");
     el.appendChild(sliderHTML(superState.quadState.quadsList));
 
@@ -99,11 +116,6 @@
     }
     function loadHandler(i) {
       noOfImagesLoaded++;
-      sendImageLoadURL(
-        superState.quadState.quadsList[i].id,
-        superState.quadState.quadsList[i].u_uid,
-        true
-      );
       if (noOfImagesLoaded === quadImages.length) {
         init(el);
       }
@@ -111,11 +123,11 @@
 
     function errorHandler(i) {
       noOfImagesLoaded++;
-      sendImageLoadURL(
-        superState.quadState.quadsList[i].id,
-        superState.quadState.quadsList[i].u_uid,
-        false
-      );
+      // sendImageLoadURL(
+      //   superState.quadState.quadsList[i].id,
+      //   superState.quadState.quadsList[i].u_uid,
+      //   false
+      // );
       if (noOfImagesLoaded === quadImages.length) {
         init(el);
       }
@@ -256,7 +268,8 @@
               ].id
             ) === -1
               ? true
-              : false
+              : false,
+          isMobileDevice: superState.isMobileDevice
         };
         var paramsToSend = JSON.stringify(params);
         sendHttpRequest(url, method, paramsToSend, success, error, "data");
@@ -300,7 +313,8 @@
             superState.quadState.currentVisibleQuadIndex
           ].u_uid,
         quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
-        quadIteration: superState.quadState.currentQuadsIteration
+        quadIteration: superState.quadState.currentQuadsIteration,
+        isMobileDevice: superState.isMobileDevice
       };
       var paramsToSend = JSON.stringify(params);
       sendHttpRequest(url, method, paramsToSend, success, error);
@@ -346,7 +360,7 @@
         item.setAttribute("class", "Quadruple-item");
         var link = document.createElement("a");
         link.title = "Quad unit";
-        link.href = array[i].url;
+        link.href = array[i].href;
         link.target = "_blank";
         link.setAttribute("class", "Quadruple-link");
         link.appendChild(makeImg(array[i].url));
