@@ -245,12 +245,7 @@
         superState.quadState.wasQuadSent
       );
 
-      if (
-        elementVisibility(superState.spaceID) >
-          superState.quadState.quadVisibilityPercent &&
-        !superState.userIdle &&
-        !superState.quadState.wasQuadSent
-      ) {
+      if (!superState.userIdle && !superState.quadState.wasQuadSent) {
         var url = "https://www.quadrupletech.com/receiver/data-receiver.php";
         var method = "POST";
         var params = {
