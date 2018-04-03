@@ -16,6 +16,7 @@
     pathname: null, // window location pathname
     isRequestInProcess: false,
     isMobileDevice: null,
+    screenResolution: null,
     quadState: {
       quadsList: [],
       quadTimer: 0,
@@ -28,18 +29,14 @@
       wasQuadSent: false // was quad data was send in same iteration
     }
   };
-  isElementPresent(superState.spaceID, getAds);
 
-  /**
-   * This function checks if the element exists in the dom and is visible also 
-   * @param {string} elementName domID of the element
-   * @param {function} success success event
-   */
-  function isElementPresent(elementName, success) {
-    var el = document.getElementById(elementName);
+  preInit();
+
+  function preInit() {
+    var el = document.getElementById(superState.spaceID);
     // if element exists
-    if (!!el && !!el.offsetParent) {
-      getAds(el);
+    getAds(el);
+    if (!!el) {
     }
   }
 
@@ -63,9 +60,11 @@
     }
     superState.pathname = window.location.pathname;
     superState.userIP = myip;
-    superState.isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+    superState.isMobileDevice = +/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
       navigator.userAgent.toLowerCase()
     );
+    superState.screenResolution = screen.width + "x" + screen.height;
+
     var url = "https://www.quadrupletech.com/receiver/adinfo.php";
     var method = "POST";
     var params = {
@@ -75,7 +74,8 @@
       pathname: superState.pathname,
       pageCounter: superState.pageCounter,
       userIP: superState.userIP,
-      isMobileDevice: superState.isMobileDevice
+      isMobileDevice: superState.isMobileDevice,
+      screenResolution: superState.screenResolution
     };
     var paramsToSend = JSON.stringify(params);
     sendHttpRequest(url, method, paramsToSend, success, error);
@@ -94,9 +94,7 @@
       superState.quadState.quadsList = adsList;
       superState.quadState.quadTimer = adTimer;
       superState.quadState.userInactivityTimer = userInactivityTimer;
-
       superState.quadState.quadVisibilityPercent = adVisibilityPercent;
-      // superState.quadState.quadVisibilityPercent = 0;
       loadAds(el);
     }
     function error() {}
@@ -178,7 +176,7 @@
         superState.quadState.wasQuadSent = false;
         superState.quadState.currentVisibleQuadIndex =
           event.detail.currentItemIndex;
-        sendActivity();
+        sendQuadrupleActivity();
       }
       function nextFunction() {
         quadruple.next();
@@ -192,14 +190,16 @@
       };
       var awayBackCallback = function() {
         superState.userIdle = false;
-        sendActivity();
+        console.log("user is back");
+        sendQuadrupleActivity();
       };
       var hiddenCallback = function() {
         superState.userIdle = true;
       };
       var visibleCallback = function() {
+        console.log("page is visible again");
         superState.userIdle = false;
-        sendActivity();
+        sendQuadrupleActivity();
       };
 
       var idle = new Idle({
@@ -207,7 +207,7 @@
         onVisible: visibleCallback,
         onAway: awayCallback,
         onAwayBack: awayBackCallback,
-        awayTimeout: superState.quadState.userInactivityTimer //away with default value of the textbox
+        awayTimeout: parseInt(superState.quadState.userInactivityTimer, 10) //away with default value of the textbox
       });
     })();
 
@@ -235,9 +235,19 @@
       }
     });
 
-    function sendActivity() {
+    function sendQuadrupleActivity() {
+      console.log(
+        "ad visible : ",
+        superState.quadState.isQuadVisible,
+        "user idle : ",
+        superState.userIdle,
+        "was quad sent : ",
+        superState.quadState.wasQuadSent
+      );
+
       if (
-        superState.quadState.isQuadVisible &&
+        elementVisibility(superState.spaceID) >
+          superState.quadState.quadVisibilityPercent &&
         !superState.userIdle &&
         !superState.quadState.wasQuadSent
       ) {
@@ -269,7 +279,8 @@
             ) === -1
               ? true
               : false,
-          isMobileDevice: superState.isMobileDevice
+          isMobileDevice: superState.isMobileDevice,
+          screenResolution: superState.screenResolution
         };
         var paramsToSend = JSON.stringify(params);
         sendHttpRequest(url, method, paramsToSend, success, error, "data");
@@ -314,7 +325,8 @@
           ].u_uid,
         quadPosition: superState.quadState.currentVisibleQuadIndex + 1,
         quadIteration: superState.quadState.currentQuadsIteration,
-        isMobileDevice: superState.isMobileDevice
+        isMobileDevice: superState.isMobileDevice,
+        screenResolution: superState.screenResolution
       };
       var paramsToSend = JSON.stringify(params);
       sendHttpRequest(url, method, paramsToSend, success, error);
@@ -380,7 +392,7 @@
   }
 
   /**
-   * 
+   *
    * @param {number} interval Interval of which autoplay event happens.
    * @param {function} code Code to run on interval
    */

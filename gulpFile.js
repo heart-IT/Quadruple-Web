@@ -7,6 +7,5 @@ gulp.task("scripts", function() {
   gulp
     .src(["./libs/idlie.js", "./libs/slider.js", "./quadRuple.js"])
     .pipe(concat("quadRuple.min.js"))
-    .pipe(uglify())
     .pipe(gulp.dest("./"));
 });
