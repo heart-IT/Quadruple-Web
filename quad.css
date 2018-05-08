@@ -24,6 +24,7 @@
  */
 .Quadruple {
   position: relative;
+  width: 160px;
 }
 
 /*
@@ -63,4 +64,43 @@
 .Quadruple-item--current {
   visibility: visible;
   position: relative;
+}
+
+.Quadruple-buttonNext,
+.Quadruple-buttonPrevious {
+  border: none;
+  webkit-appearance: none;
+  background: hsla(0, 0%, 100%, 0.3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  text-indent: -9999px;
+  position: absolute;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+.Quadruple-buttonPrevious {
+  left: 0.3pc;
+}
+.Quadruple-buttonNext {
+  right: 0.3pc;
+}
+
+.Quadruple-buttonNext::before,
+.Quadruple-buttonPrevious::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  text-indent: 0;
+  font-size: 20px;
+  line-height: 0;
+}
+.Quadruple-buttonPrevious::before {
+  content: "\276E";
+}
+.Quadruple-buttonNext::before {
+  content: "\276F";
 }

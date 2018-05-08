@@ -103,6 +103,15 @@
   function loadAds(el) {
     el.setAttribute("class", "Quadruple");
     el.appendChild(sliderHTML(superState.quadState.quadsList));
+    var item = document.createElement("button");
+    item.setAttribute("class", "Quadruple-buttonPrevious");
+    item.innerHTML = "Previous";
+    el.appendChild(item);
+
+    item = document.createElement("button");
+    item.setAttribute("class", "Quadruple-buttonNext");
+    item.innerHTML = "Next";
+    el.appendChild(item);
 
     var quadImages = document.getElementsByClassName("Quadruple-image");
     var noOfImagesLoaded = 0;
