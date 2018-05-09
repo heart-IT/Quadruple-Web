@@ -245,14 +245,32 @@
     });
 
     function sendQuadrupleActivity() {
-      console.log(
-        "ad visible : ",
-        superState.quadState.isQuadVisible,
-        "user idle : ",
-        superState.userIdle,
-        "was quad sent : ",
-        superState.quadState.wasQuadSent
-      );
+      // console.log(
+      //   "ad visible : ",
+      //   superState.quadState.isQuadVisible,
+      //   "user idle : ",
+      //   superState.userIdle,
+      //   "was quad sent : ",
+      //   superState.quadState.wasQuadSent
+      // );
+
+      function success() {
+        superState.quadState.wasQuadSent = true;
+        if (
+          superState.quadState.sentQuadIDs.indexOf(
+            superState.quadState.quadsList[
+              superState.quadState.currentVisibleQuadIndex
+            ].id
+          ) === -1
+        ) {
+          superState.quadState.sentQuadIDs.push(
+            superState.quadState.quadsList[
+              superState.quadState.currentVisibleQuadIndex
+            ].id
+          );
+        }
+      }
+      function error() {}
 
       var isUnqie =
         -1 ===
@@ -299,23 +317,6 @@
         };
         var paramsToSend = JSON.stringify(params);
         sendHttpRequest(url, method, paramsToSend, success, error, "data");
-        function success() {
-          superState.quadState.wasQuadSent = true;
-          if (
-            superState.quadState.sentQuadIDs.indexOf(
-              superState.quadState.quadsList[
-                superState.quadState.currentVisibleQuadIndex
-              ].id
-            ) === -1
-          ) {
-            superState.quadState.sentQuadIDs.push(
-              superState.quadState.quadsList[
-                superState.quadState.currentVisibleQuadIndex
-              ].id
-            );
-          }
-        }
-        function error() {}
       }
     }
 
